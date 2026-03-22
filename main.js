@@ -939,8 +939,9 @@
 
 
 // ========== ANIMATED COUNTERS ==========
+// ========== ANIMATED COUNTERS ==========
 (function initCounters() {
-    function animateCounter(el, target, duration = 2000, isDecimal = false) {
+    function animateCounter(el, target, duration = 2000, isDecimal = false, prefix = '') {
         const startTime = performance.now();
 
         function update(currentTime) {
@@ -949,13 +950,16 @@
             const eased = 1 - Math.pow(1 - progress, 3);
             const current = target * eased;
 
+            let display;
             if (isDecimal) {
-                el.textContent = current.toFixed(1);
+                display = current.toFixed(1);
             } else if (target >= 1000) {
-                el.textContent = Math.floor(current).toLocaleString() + '+';
+                display = Math.floor(current).toLocaleString() + '+';
             } else {
-                el.textContent = Math.floor(current);
+                display = Math.floor(current);
             }
+
+            el.textContent = prefix + display;
 
             if (progress < 1) requestAnimationFrame(update);
         }
@@ -965,6 +969,7 @@
     const observer = new IntersectionObserver((entries) => {
         entries.forEach(entry => {
             if (entry.isIntersecting) {
+
                 entry.target.querySelectorAll('.stat-number[data-target]').forEach(el => {
                     const target = parseFloat(el.dataset.target);
                     animateCounter(el, target, 2000, target % 1 !== 0);
@@ -972,24 +977,18 @@
 
                 entry.target.querySelectorAll('.achievement-value[data-target]').forEach(el => {
                     const target = parseFloat(el.dataset.target);
-                    const prefix = el.textContent.startsWith('#') ? '#' : '';
-                    animateCounter(el, target, 2000, false);
-                    if (prefix) {
-                        const counterObs = new MutationObserver(() => {
-                            if (!el.textContent.startsWith('#')) el.textContent = '#' + el.textContent;
-                        });
-                        counterObs.observe(el, { childList: true, characterData: true, subtree: true });
-                    }
+                    // Check if original text had a '#' prefix
+                    const prefix = el.textContent.trim().startsWith('#') ? '#' : '';
+                    animateCounter(el, target, 2000, false, prefix);
                 });
 
                 observer.unobserve(entry.target);
             }
         });
-    }, { threshold: 0.3 });
+    }, { threshold: 0.1 }); // reduced from 0.3 → fires more reliably
 
     document.querySelectorAll('#about, #achievements').forEach(s => observer.observe(s));
 })();
-
 
 // ========== ADVANCED 3D TILT ==========
 (function initTilt() {
